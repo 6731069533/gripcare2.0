@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GripCare – ทดลองวัดมือด้วยมือถือ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECF1EE;--surface:#FFFFFF;--surface2:#F5F8F6;--ink:#16262A;--muted:#4A5B5E;--line:#D3DCD8;
+  --accent:#1E5E66;--accent-ink:#FFFFFF;--accent-bg:#DCEBEC;
+  --ok:#2C7A4C;--ok-bg:#E2F0E7;--warn:#8F5A05;--warn-bg:#FAEBCF;--bad:#AE2A20;--bad-bg:#FADFDB;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A1C;--surface:#172427;--surface2:#1C2C30;--ink:#E6EEEC;--muted:#A9BAB7;--line:#2E4045;
+    --accent:#7CC3C9;--accent-ink:#0F1A1C;--accent-bg:#1E3539;
+    --ok:#7FCB98;--ok-bg:#1D3426;--warn:#F0BC5E;--warn-bg:#3A2D12;--bad:#F2928A;--bad-bg:#3E1E1B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A1C;--surface:#172427;--surface2:#1C2C30;--ink:#E6EEEC;--muted:#A9BAB7;--line:#2E4045;
+  --accent:#7CC3C9;--accent-ink:#0F1A1C;--accent-bg:#1E3539;
+  --ok:#7FCB98;--ok-bg:#1D3426;--warn:#F0BC5E;--warn-bg:#3A2D12;--bad:#F2928A;--bad-bg:#3E1E1B;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;font-size:16px;line-height:1.6}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.5rem;line-height:1.25;margin:8px 0 2px;font-weight:700}
+h2{font-size:1.1rem;margin:0 0 8px;font-weight:600}
+p{margin:0}
+.small{font-size:.85rem;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 12px}
+.modes button{font:inherit;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:12px;min-height:44px;cursor:pointer}
+.modes button[aria-pressed="true"]{border:2px solid var(--accent);background:var(--accent-bg)}
+.modes b{display:block}
+.btn{font:inherit;font-weight:600;border:0;background:var(--accent);color:var(--accent-ink);border-radius:14px;min-height:56px;width:100%;cursor:pointer;font-size:1.05rem}
+.btn.sec{background:var(--surface);color:var(--ink);border:1px solid var(--line);font-weight:500;min-height:44px;font-size:.95rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row .btn{flex:1 1 140px}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.stage{text-align:center;padding:28px 16px}
+.count{font-size:4rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.prog{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:16px}
+.prog span{display:block;height:100%;background:var(--accent)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.kv div{background:var(--surface2);border-radius:12px;padding:12px}
+.kv .num{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.verdict{border-radius:16px;padding:16px;margin-bottom:12px}
+.v-ok{background:var(--ok-bg)}.v-ok h2{color:var(--ok)}
+.v-warn{background:var(--warn-bg)}.v-warn h2{color:var(--warn)}
+.v-bad{background:var(--bad-bg)}.v-bad h2{color:var(--bad)}
+.v-info{background:var(--accent-bg)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px;font-family:inherit}
+.ln{fill:none;stroke:var(--accent);stroke-width:1.4}
+.axis{stroke:var(--line);stroke-width:1}
+.bar{fill:var(--muted)}.bar.in{fill:var(--accent)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.hist div{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:.9rem;font-variant-numeric:tabular-nums}
+.hist div:first-child{border-top:0}
+.err{background:var(--warn-bg);color:var(--ink);border-radius:12px;padding:12px;margin-bottom:12px}
+ol{margin:6px 0 0;padding-left:1.2em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GripCare ทดลองวัดมือด้วยมือถือ</h1>
+  <p class="small">ใช้เซนเซอร์ความเร่งของมือถือแทน IMU ในปลอก GripCare เพื่อสาธิตการแปลผล ไม่ได้วัดแรงจับ และไม่ใช่การตรวจทางการแพทย์</p>
+  <main id="app"></main>
+</div>
+
+<script>
+/* ===== ค่าตั้งต้น (ทีมกำหนด) ===== */
+const DUR = { still: 10, shake: 6 };             // วินาทีที่บันทึก
+const PREP = 3;                                  // นับถอยหลังก่อนเริ่ม
+const TREMOR_BAND = [4, 12], SHAKE_BAND = [1, 10];
+const STORE = 'gripcare-phone-v1';
+
+const MODES = {
+  still: { title: 'ถือนิ่ง', sub: 'วัดอาการสั่น 10 วินาที',
+    how: ['ถือมือถือด้วยมือเดียว หน้าจอหงายขึ้น', 'ยืดแขนไปข้างหน้าระดับไหล่', 'พยายามถือให้นิ่งที่สุดจนครบเวลา'] },
+  shake: { title: 'เขย่า', sub: 'วัดจังหวะ 6 วินาที',
+    how: ['จับมือถือให้แน่น ระวังหลุดมือ', 'เขย่าขึ้นลงเร็วและสม่ำเสมอที่สุด', 'เขย่าต่อเนื่องจนครบเวลา'] }
+};
+
+/* ===== สถานะ ===== */
+const S = { mode: 'still', phase: 'idle', samples: [], t0: 0, left: 0, result: null, error: '', simulated: false };
+let hist = [];
+try { hist = JSON.parse(localStorage.getItem(STORE)) || []; } catch (e) {}
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(hist.slice(-30))); } catch (e) {} };
+const fmt = (v, d) => v.toLocaleString('th-TH', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+/* ===== อ่านเซนเซอร์ ===== */
+function onMotion(e) {
+  if (S.phase !== 'rec') return;
+  const a = (e.acceleration && e.acceleration.x != null) ? e.acceleration : e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  S.samples.push({ t: performance.now() / 1000, x: a.x, y: a.y, z: a.z });
+}
+async function askPermission() {
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    let r; try { r = await DeviceMotionEvent.requestPermission(); } catch (e) { throw new Error('หน้านี้ถูกเปิดในหน้าต่างที่ปิดกั้นเซนเซอร์ (เช่น ในแอป Claude) ให้เปิดลิงก์ใน Safari หรือ Chrome โดยตรง'); }
+    if (r !== 'granted') throw new Error('ไม่ได้รับอนุญาตให้ใช้เซนเซอร์การเคลื่อนไหว');
+  }
+  if (typeof DeviceMotionEvent === 'undefined') throw new Error('อุปกรณ์หรือเบราว์เซอร์นี้ไม่มีเซนเซอร์การเคลื่อนไหว');
+  if (!window.isSecureContext) throw new Error('ต้องเปิดผ่านลิงก์ https เท่านั้น เซนเซอร์จึงจะทำงาน');
+}
+
+/* ===== ข้อมูลจำลอง (ใช้เมื่อไม่มีเซนเซอร์) ===== */
+function simulate(mode, shaky) {
+  const fs = 60, n = DUR[mode] * fs, out = [], ph = Math.random() * 6.28, f = 5 + Math.random() * 2;
+  const g = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283 * v); };
+  for (let i = 0; i < n; i++) {
+    const t = i / fs; let x, y, z;
+    if (mode === 'still') {
+      const A = shaky ? 0.25 : 0.04, tr = A * Math.sin(6.283 * f * t + ph);
+      x = tr + 0.015 * g() + 0.05 * Math.sin(6.283 * 0.3 * t); y = 0.6 * tr + 0.015 * g(); z = 0.3 * tr + 0.015 * g();
+    } else {
+      const sf = shaky ? 3.2 + 0.6 * Math.sin(t) : 4.5, A = 8;
+      y = A * Math.sin(6.283 * sf * t + ph) + (shaky ? 2.5 * g() : 0.6 * g()); x = 0.2 * y + 0.3 * g(); z = 0.3 * g();
+    }
+    out.push({ t, x, y, z });
+  }
+  return out;
+}
+
+/* ===== วิเคราะห์ ===== */
+function highpass(v, ts, win) {                  // ลบค่าเฉลี่ยเคลื่อนที่ (ตัดแรงโน้มถ่วงและการขยับช้า)
+  const out = new Array(v.length); let j0 = 0, j1 = 0, sum = 0;
+  for (let i = 0; i < v.length; i++) {
+    while (j1 < v.length && ts[j1] <= ts[i] + win / 2) { sum += v[j1]; j1++; }
+    while (ts[j0] < ts[i] - win / 2) { sum -= v[j0]; j0++; }
+    out[i] = v[i] - sum / (j1 - j0);
+  }
+  return out;
+}
+function ampAt(v, ts, f) {                       // DFT ที่ความถี่ f ใช้เวลาจริงของแต่ละจุด (รองรับการสุ่มไม่สม่ำเสมอ)
+  let re = 0, im = 0; for (let i = 0; i < v.length; i++) { const a = 6.283185 * f * ts[i]; re += v[i] * Math.cos(a); im -= v[i] * Math.sin(a); }
+  return 2 * Math.sqrt(re * re + im * im) / v.length;
+}
+function analyze(samples, mode) {
+  const t0 = samples[0].t, ts = samples.map(s => s.t - t0), T = ts[ts.length - 1];
+  const fs = (samples.length - 1) / T;
+  const win = mode === 'still' ? 0.5 : 2.0;
+  const ax = ['x', 'y', 'z'].map(k => highpass(samples.map(s => s[k]), ts, win));
+  const mag = ts.map((_, i) => Math.sqrt(ax[0][i] ** 2 + ax[1][i] ** 2 + ax[2][i] ** 2) * Math.sign(ax[0][i] + ax[1][i] + ax[2][i] || 1));
+  const df = 1 / T, fmax = Math.min(20, fs / 2 - 0.5), spec = [];
+  for (let f = 0.5; f <= fmax; f += df) { let p = 0; for (const v of ax) { const a = ampAt(v, ts, f); p += a * a / 2; } spec.push({ f, p }); }
+  const band = mode === 'still' ? TREMOR_BAND : SHAKE_BAND;
+  const inB = spec.filter(s => s.f >= band[0] && s.f <= band[1]);
+  const bandPow = inB.reduce((a, s) => a + s.p, 0), totalPow = spec.reduce((a, s) => a + s.p, 0) || 1;
+  const peak = inB.reduce((m, s) => s.p > m.p ? s : m, { p: -1, f: 0 });
+  const near = inB.filter(s => Math.abs(s.f - peak.f) <= 0.5).reduce((a, s) => a + s.p, 0);
+  return { mode, fs, T, ts, mag, spec, band, rms: Math.sqrt(bandPow), peakF: peak.f, regularity: near / (bandPow || 1), share: bandPow / totalPow, n: samples.length };
+}
+
+/* ===== แปลผล ===== */
+function baselineOf(mode, sim = false) {
+  const xs = hist.filter(h => h.mode === mode && !!h.sim === sim).map(h => h.rms).sort((a, b) => a - b);
+  return xs.length >= 2 ? xs[Math.floor(xs.length / 2)] : null;
+}
+function verdict(r) {
+  const base = baselineOf(r.mode, S.simulated);
+  if (r.mode === 'still') {
+    if (base == null) return { cls: 'v-info', h: 'บันทึกเป็นค่าเริ่มต้นของคุณ', p: 'ทดสอบซ้ำอีก 1–2 ครั้งในวันอื่น ระบบจะเริ่มเทียบกับค่าปกติของคุณเอง แบบเดียวกับ Baseline ของ GripCare' };
+    const ratio = r.rms / base;
+    if (ratio < 1.5) return { cls: 'v-ok', h: 'ใกล้เคียงค่าปกติของคุณ', p: `ความสั่นครั้งนี้ ${fmt(ratio, 1)} เท่าของค่าปกติ` };
+    if (ratio < 2.5) return { cls: 'v-warn', h: 'สั่นมากกว่าปกติของคุณเล็กน้อย', p: `${fmt(ratio, 1)} เท่าของค่าปกติ อาจเกี่ยวกับความล้า กาแฟ หรือท่าถือ ลองทดสอบซ้ำหลังพัก` };
+    return { cls: 'v-bad', h: 'สั่นมากกว่าปกติของคุณชัดเจน', p: `${fmt(ratio, 1)} เท่าของค่าปกติ ถ้าผลแบบนี้เกิดซ้ำหลายวัน GripCare จะแนะนำให้ปรึกษาแพทย์หรือเภสัชกร` };
+  }
+  const reg = r.regularity;
+  return reg >= 0.5
+    ? { cls: 'v-ok', h: `จังหวะสม่ำเสมอ ${fmt(r.peakF, 1)} ครั้ง/วินาที`, p: `พลังงาน ${fmt(reg * 100, 0)}% อยู่ใกล้จังหวะหลัก หมายถึงเขย่าได้เป็นจังหวะเดียวกันตลอด` }
+    : { cls: 'v-warn', h: `จังหวะไม่ค่อยสม่ำเสมอ ${fmt(r.peakF, 1)} ครั้ง/วินาที`, p: `พลังงานเพียง ${fmt(reg * 100, 0)}% อยู่ใกล้จังหวะหลัก จังหวะแกว่งไปมา อาจเกิดจากความล้าหรือการควบคุมมือ` };
+}
+
+/* ===== กราฟ ===== */
+function waveSvg(r) {
+  const W = 480, H = 140, L = 40, R = 8, T = 8, B = 22, m = r.mag, ts = r.ts;
+  const lim = Math.max(...m.map(Math.abs)) || 1;
+  const X = t => L + t / r.T * (W - L - R), Y = v => T + (lim - v) / (2 * lim) * (H - T - B);
+  const d = m.map((v, i) => `${i ? 'L' : 'M'}${X(ts[i]).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+  const ticks = []; for (let s = 0; s <= Math.floor(r.T); s += r.T > 8 ? 2 : 1) ticks.push(`<text x="${X(s)}" y="${H - 6}" text-anchor="middle">${s} s</text>`);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="สัญญาณการเคลื่อนไหวตามเวลา">
+    <line class="axis" x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}"/><path class="ln" d="${d}"/>${ticks.join('')}
+    <text x="${L - 6}" y="${T + 8}" text-anchor="end">${fmt(lim, lim < 1 ? 2 : 1)}</text><text x="${L - 6}" y="${H - B}" text-anchor="end">−${fmt(lim, lim < 1 ? 2 : 1)}</text>
+    <text x="${W - R}" y="${T + 8}" text-anchor="end">m/s²</text></svg>`;
+}
+function specSvg(r) {
+  const W = 480, H = 140, L = 40, R = 8, T = 8, B = 22, sp = r.spec, fmax = sp[sp.length - 1].f;
+  const mx = Math.max(...sp.map(s => Math.sqrt(s.p))) || 1, X = f => L + f / fmax * (W - L - R), bw = Math.max((W - L - R) / sp.length - 0.5, 1);
+  const bars = sp.map(s => { const h = Math.sqrt(s.p) / mx * (H - T - B); return `<rect class="bar ${s.f >= r.band[0] && s.f <= r.band[1] ? 'in' : ''}" x="${X(s.f) - bw / 2}" y="${H - B - h}" width="${bw}" height="${h}"/>`; }).join('');
+  const ticks = [0, 4, 8, 12, 16, 20].filter(f => f <= fmax).map(f => `<text x="${X(f)}" y="${H - 6}" text-anchor="middle">${f}</text>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="สเปกตรัมความถี่"><line class="axis" x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}"/>${bars}${ticks}
+    <text x="${W - R}" y="${T + 8}" text-anchor="end">Hz</text></svg>
+    <div class="legend"><span><i style="background:var(--accent)"></i>ช่วง ${r.band[0]}–${r.band[1]} Hz ที่ใช้คำนวณ</span></div>`;
+}
+
+/* ===== หน้าจอ ===== */
+const app = document.getElementById('app');
+function render() {
+  const m = MODES[S.mode];
+  if (S.phase === 'idle') {
+    app.innerHTML = `
+      <div class="modes">${Object.entries(MODES).map(([k, v]) => `<button data-mode="${k}" aria-pressed="${S.mode === k}"><b>${v.title}</b><span class="small">${v.sub}</span></button>`).join('')}</div>
+      ${S.error ? `<div class="err" role="alert">${S.error}</div>` : ''}
+      <section class="card"><h2>วิธีทดสอบ</h2><ol>${m.how.map(x => `<li>${x}</li>`).join('')}</ol></section>
+      <button class="btn" data-act="start">เริ่มทดสอบ</button>
+      <div class="row"><button class="btn sec" data-act="sim0">ลองด้วยข้อมูลจำลอง: มือปกติ</button><button class="btn sec" data-act="sim1">ข้อมูลจำลอง: มือสั่น</button></div>
+      ${histHtml()}`;
+  } else if (S.phase === 'prep' || S.phase === 'rec') {
+    const pct = S.phase === 'rec' ? (1 - S.left / DUR[S.mode]) * 100 : 0;
+    app.innerHTML = `<section class="card stage" aria-live="polite">
+      <p class="small">${S.phase === 'prep' ? 'เตรียมตัว' : m.title === 'ถือนิ่ง' ? 'ถือให้นิ่ง' : 'เขย่าต่อเนื่อง'}</p>
+      <div class="count">${Math.ceil(S.left)}</div>
+      <p class="small" style="margin-top:8px">${S.phase === 'rec' ? `เก็บข้อมูลแล้ว ${S.samples.length} จุด` : m.how[1]}</p>
+      <div class="prog"><span style="width:${pct}%"></span></div></section>
+      <button class="btn sec" data-act="cancel">ยกเลิก</button>`;
+  } else if (S.phase === 'result') {
+    const r = S.result, v = S.verdict;
+    app.innerHTML = `
+      <section class="verdict ${v.cls}" aria-live="polite"><h2>${v.h}</h2><p>${v.p}</p>${S.simulated ? '<p class="small" style="margin-top:6px">ผลนี้มาจากข้อมูลจำลอง</p>' : ''}</section>
+      <div class="kv">
+        ${r.mode === 'still'
+          ? `<div><div class="small">ความแรงของการสั่น</div><div class="num">${fmt(r.rms, 3)}</div><div class="small">m/s² (ช่วง 4–12 Hz)</div></div>
+             <div><div class="small">ความถี่หลักของการสั่น</div><div class="num">${fmt(r.peakF, 1)}</div><div class="small">Hz</div></div>`
+          : `<div><div class="small">จังหวะเขย่า</div><div class="num">${fmt(r.peakF, 1)}</div><div class="small">ครั้ง/วินาที</div></div>
+             <div><div class="small">ความสม่ำเสมอ</div><div class="num">${fmt(r.regularity * 100, 0)}%</div><div class="small">พลังงานรอบจังหวะหลัก</div></div>`}
+      </div>
+      <section class="card"><h2>สัญญาณที่วัดได้</h2>${waveSvg(r)}<p class="small" style="margin-top:12px">แยกความถี่ด้วย DFT</p>${specSvg(r)}
+        <p class="small" style="margin-top:8px">${r.n} จุด · ${fmt(r.fs, 0)} ครั้ง/วินาที · ${fmt(r.T, 1)} วินาที</p></section>
+      <button class="btn" data-act="again">ทดสอบอีกครั้ง</button>
+      <div class="row"><button class="btn sec" data-act="home">เปลี่ยนโหมด</button></div>
+      ${histHtml()}`;
+  }
+}
+function histHtml() {
+  if (!hist.length) return '';
+  const rows = hist.slice(-8).reverse().map(h => `<div><span>${new Date(h.ts).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${MODES[h.mode].title}${h.sim ? ' (จำลอง)' : ''}</span><span>${h.mode === 'still' ? fmt(h.rms, 3) + ' m/s²' : fmt(h.peakF, 1) + ' Hz'}</span></div>`).join('');
+  const base = baselineOf('still');
+  return `<section class="card" style="margin-top:12px"><h2>ประวัติบนเครื่องนี้</h2>
+    ${base != null ? `<p class="small" style="margin-bottom:6px">ค่าปกติของคุณ (ถือนิ่ง): ${fmt(base, 3)} m/s²</p>` : ''}
+    <div class="hist">${rows}</div><div class="row"><button class="btn sec" data-act="clear">ล้างประวัติ</button></div></section>`;
+}
+
+/* ===== ขั้นตอนการทดสอบ ===== */
+let timer = null;
+function stop() { clearInterval(timer); timer = null; window.removeEventListener('devicemotion', onMotion); }
+function finish(samples, sim) {
+  stop(); S.simulated = sim;
+  if (samples.length < 40) { S.phase = 'idle'; S.error = 'ไม่ได้รับค่าจากเซนเซอร์ เบราว์เซอร์อาจปิดกั้นเมื่อเปิดในหน้าต่างย่อย ลองเปิดลิงก์ในเบราว์เซอร์ของมือถือโดยตรง หรือใช้ข้อมูลจำลอง'; render(); return; }
+  const r = analyze(samples, S.mode);
+  S.result = r; S.verdict = verdict(r); S.phase = 'result'; S.error = '';
+  hist.push({ ts: Date.now(), mode: r.mode, rms: r.rms, peakF: r.peakF, sim }); save();
+  render();
+}
+async function start() {
+  S.error = '';
+  try { await askPermission(); } catch (e) { S.error = e.message + ' ลองใช้ข้อมูลจำลองแทนได้'; render(); return; }
+  S.samples = []; S.phase = 'prep'; S.left = PREP; render();
+  window.addEventListener('devicemotion', onMotion);
+  const t0 = performance.now();
+  timer = setInterval(() => {
+    const el = (performance.now() - t0) / 1000;
+    if (el < PREP) { S.left = PREP - el; }
+    else {
+      if (S.phase === 'prep') { S.phase = 'rec'; S.samples = []; }
+      S.left = Math.max(0, PREP + DUR[S.mode] - el);
+      if (S.phase === 'rec' && el > PREP + 1.5 && S.samples.length === 0) { finish([], false); return; }
+      if (S.left <= 0) { finish(S.samples, false); return; }
+    }
+    render();
+  }, 200);
+}
+function runSim(shaky) { S.error = ''; finish(simulate(S.mode, shaky), true); }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const a = b.dataset.act;
+  if (b.dataset.mode) { S.mode = b.dataset.mode; S.error = ''; render(); }
+  if (a === 'start' || a === 'again') start();
+  if (a === 'sim0') runSim(false);
+  if (a === 'sim1') runSim(true);
+  if (a === 'cancel') { stop(); S.phase = 'idle'; render(); }
+  if (a === 'home') { S.phase = 'idle'; render(); }
+  if (a === 'clear') { hist = []; save(); render(); }
+});
+render();
+</script>
+</body>
+</html>
